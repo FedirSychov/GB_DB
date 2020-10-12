@@ -1,0 +1,50 @@
+1) SELECT
+  *,
+  TIMESTAMPDIFF(YEAR, birthday, NOW())
+FROM profiles
+WHERE 
+  TIMESTAMPDIFF(YEAR, birthday, NOW()) < 14;
+Данный запрос по поиску пользователей, которым меньше 14 лет, можно переделать в запрос, определяющий 
+промежуток времени между последней активностью, и, к примеру, замораживать аккаунт, если им никто не 
+пользовался в течение 10 лет.
+Запрос:
+SELECT
+  *,
+  TIMESTAMPDIFF(YEAR, birthday, NOW())
+FROM profiles
+WHERE 
+  TIMESTAMPDIFF(YEAR, updated_at, NOW()) > 10;
+
+2) Пусть задан некоторый пользователь. 
+Из всех друзей этого пользователя найдите человека, который больше всех общался с нашим пользователем.
+SELECT MAX(`count`), to_user_id FROM (SELECT 
+	vk.friend_requests.to_user_id,
+    COUNT(*) AS `count`
+    FROM vk.friend_requests
+    WHERE friend_requests.from_user_id = 14
+    GROUP BY friend_requests.to_user_id) AS T;
+
+3) Подсчитать общее количество лайков, которые получили 10 самых молодых пользователей.
+SELECT SUM(likes) FROM (SELECT vk.users.likes FROM vk.users WHERE users.id IN (SELECT users.id FROM (
+SELECT vk.profiles.users_id,
+	datediff(NOW(), vk.profiles.birthday) / 365.25 as age
+    FROM vk.profiles
+    ) as T
+	ORDER BY age
+    LIMIT 10) as likes);
+
+4) Определить кто больше поставил лайков (всего) - мужчины или женщины?
+SELECT MAX(count), gender FROM (SELECT users_id AS id,
+	gender as gender,
+    COUNT(*) AS count,
+	(SELECT gender FROM vk.like WHERE users_id = id)
+	FROM vk.profiles
+    GROUP BY gender) AS T;
+
+5) Найти 10 пользователей, которые проявляют наименьшую активность в использовании социальной сети. 
+Вычислим наименьшую активность, отсортировав всех пользователей по дате последнего обновления.
+SELECT id, firstname , updated_at
+	FROM vk.users
+    WHERE updated_at <=> null != 1
+    ORDER BY updated_at
+    LIMIT 10;
